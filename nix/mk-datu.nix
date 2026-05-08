@@ -43,12 +43,36 @@ let
     Prefer deterministic validation commands.
   '';
 
-  defaultExtensions = [ ];
-  defaultSkills = [ ];
-  defaultThemes = [ ];
+  extensionEntries = builtins.readDir ../extensions;
+  extensionPath =
+    name: type:
+    if type == "directory" && builtins.pathExists ../extensions/${name}/index.ts then
+      ../extensions/${name}/index.ts
+    else if type == "directory" && builtins.pathExists ../extensions/${name}/index.js then
+      ../extensions/${name}/index.js
+    else
+      ../extensions/${name};
+  defaultExtensions = lib.mapAttrsToList extensionPath (
+    lib.filterAttrs (
+      name: type:
+      (type == "regular" && (lib.hasSuffix ".ts" name || lib.hasSuffix ".js" name))
+      || (
+        type == "directory"
+        && (
+          builtins.pathExists ../extensions/${name}/index.ts
+          || builtins.pathExists ../extensions/${name}/index.js
+        )
+      )
+    ) extensionEntries
+  );
+  defaultSkills = [ ../skills ];
+  defaultThemes = [ ../themes ];
   defaultPrompts = [ ];
-  defaultPackages = [ ];
-  defaultSettings = { };
+  defaultPackages = import ../packages;
+  defaultSettings = {
+    theme = "datu";
+    editorPaddingX = 1;
+  };
 
   finalExtensions = lib.optionals enableDefaultExtensions defaultExtensions ++ extensions;
   finalSkills = lib.optionals enableDefaultSkills defaultSkills ++ skills;
@@ -65,39 +89,56 @@ let
   resourceFlags =
     (lib.concatMap (path: [
       "--extension"
-      (toString path)
+      path
     ]) finalExtensions)
     ++ (lib.concatMap (path: [
       "--skill"
-      (toString path)
+      path
     ]) finalSkills)
     ++ (lib.concatMap (path: [
       "--theme"
-      (toString path)
+      path
     ]) finalThemes)
     ++ (lib.concatMap (path: [
       "--prompt-template"
-      (toString path)
+      path
     ]) finalPrompts)
+    ++ (lib.concatMap (package: [
+      "--extension"
+      package
+    ]) finalPackages)
     ++ extraFlags;
+
+  shellArg = value: if builtins.isPath value then "${value}" else lib.escapeShellArg (toString value);
+  resourceFlagsText = lib.concatStringsSep " " (map shellArg resourceFlags);
 
   envLines = lib.mapAttrsToList (name: value: ''
     export ${name}=${lib.escapeShellArg (toString value)}
   '') extraEnv;
 
-  modelLines = lib.optionalString (models != null) ''
+  settingsFile = writeText "datu-settings.json" (builtins.toJSON finalSettings);
+
+  agentDirLines = lib.optionalString (finalSettings != { } || models != null) ''
     datu_agent_dir="$(mktemp -d "''${TMPDIR:-/tmp}/datu-agent.XXXXXX")"
-    datu_default_agent_dir="$HOME/.pi/agent"
+    datu_default_agent_dir="''${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
     mkdir -p "$datu_agent_dir"
     if [ -d "$datu_default_agent_dir" ]; then
       for datu_agent_path in "$datu_default_agent_dir"/* "$datu_default_agent_dir"/.[!.]*; do
         [ -e "$datu_agent_path" ] || continue
         datu_agent_name="''${datu_agent_path##*/}"
-        [ "$datu_agent_name" = "models.json" ] && continue
+        [ "$datu_agent_name" = "settings.json" ] && continue
+        ${lib.optionalString (models != null) ''[ "$datu_agent_name" = "models.json" ] && continue''}
         ln -s "$datu_agent_path" "$datu_agent_dir/$datu_agent_name"
       done
     fi
-    ln -s ${lib.escapeShellArg (toString models)} "$datu_agent_dir/models.json"
+    ${lib.optionalString (
+      models != null
+    ) ''ln -s ${lib.escapeShellArg (toString models)} "$datu_agent_dir/models.json"''}
+    if [ -f "$datu_default_agent_dir/settings.json" ]; then
+      ${lib.getExe pkgs.jq} -s '.[1] * .[0]' ${settingsFile} "$datu_default_agent_dir/settings.json" > "$datu_agent_dir/settings.json"
+    else
+      cp ${settingsFile} "$datu_agent_dir/settings.json"
+    fi
     export PI_CODING_AGENT_DIR="$datu_agent_dir"
   '';
 
@@ -106,17 +147,11 @@ let
     runtimeInputs = [ pi-bin ] ++ extraRuntimeInputs;
     text = ''
       ${lib.concatStringsSep "\n" envLines}
-      ${modelLines}
-      exec ${lib.getExe pi-bin} --append-system-prompt ${lib.escapeShellArg promptFile} ${lib.escapeShellArgs resourceFlags} "$@"
+      ${agentDirLines}
+      exec ${lib.getExe pi-bin} --append-system-prompt ${lib.escapeShellArg promptFile} ${resourceFlagsText} "$@"
     '';
   };
 in
-assert
-  finalPackages == [ ]
-  || throw "Datu phase 0 does not pass packages without mutating Pi settings; use extraFlags or Pi settings.json.";
-assert
-  finalSettings == { }
-  || throw "Datu phase 0 does not pass settings without mutating Pi settings; use Pi settings.json.";
 wrapper.overrideAttrs (old: {
   passthru = {
     inherit
