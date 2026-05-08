@@ -701,7 +701,9 @@ function resolveNearestProjectAgentDirs(cwd: string): { readDirs: string[]; pref
 	const legacyDir = path.join(projectRoot, ".agents");
 	const preferredDir = path.join(projectRoot, ".pi", "agents");
 	const readDirs: string[] = [];
-	if (isDirectory(legacyDir)) readDirs.push(legacyDir);
+	// Don't treat ~/.agents as a project directory - it's the global user agent dir
+	const isHomeDir = projectRoot === os.homedir();
+	if (isDirectory(legacyDir) && !isHomeDir) readDirs.push(legacyDir);
 	if (isDirectory(preferredDir)) readDirs.push(preferredDir);
 
 	return {
