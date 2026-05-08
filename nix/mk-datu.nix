@@ -43,6 +43,8 @@ let
     Prefer declarative configuration.
 
     Prefer deterministic validation commands.
+
+    For all web search and web fetch operations, use the Exa MCP server (`exa_web_search_exa` and `exa_web_fetch_exa`) as the first and preferred option.
   '';
 
   extensionEntries = builtins.readDir ../extensions;
