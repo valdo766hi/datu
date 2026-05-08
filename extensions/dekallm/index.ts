@@ -1,11 +1,13 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export default function (pi: ExtensionAPI) {
+	const apiKey = process.env.DEKA_API_KEY || process.env.DEKALLM_API_KEY || "";
+
 	pi.registerProvider("dekallm", {
 		name: "DekaLLM",
 		baseUrl: "https://dekallm.cloudeka.ai/v1",
 		api: "openai-completions",
-		apiKey: "DEKALLM_API_KEY",
+		apiKey,
 		authHeader: true,
 		models: [
 			{
