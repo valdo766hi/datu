@@ -154,6 +154,7 @@ let
     text = ''
       ${lib.concatStringsSep "\n" envLines}
       ${agentDirLines}
+      export PI_SUBAGENTS_USER_DIR="''${PI_SUBAGENTS_USER_DIR:-$HOME/.pi/subagents}"
       exec ${lib.getExe pi-bin} --append-system-prompt ${lib.escapeShellArg promptFile} ${resourceFlagsText} "$@"
     '';
   };
