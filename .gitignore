@@ -1,0 +1,17 @@
+# Nix
+/result
+/result-*
+/.direnv
+.envrc
+
+# Env/secrets
+.env
+.env.*
+!.env.example
+
+# etc
+.DS_Store
+*.log
+*.tmp
+*.swp
+*.swo
