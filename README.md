@@ -68,7 +68,31 @@ inputs.datu.lib.mkDatu { inherit pkgs; } {
 }
 ```
 
-Phase 0 keeps default extensions, skills, themes, prompts, packages, and settings empty. The default Datu prompt is enabled and appended with Pi's `--append-system-prompt` flag.
+Default extensions are loaded from `extensions/*/index.ts` or `extensions/*/index.js`. Default skills are loaded from `skills/`. Default themes are loaded from `themes/`. Default packages are listed in `packages/default.nix`. Add each new default extension in its own directory.
+
+Current defaults:
+
+- Extension: `datu-ui`
+- Skill: `gh-cli`
+- Theme: `datu`
+- Package: `npm:pi-subagents`
+- Package: `npm:pi-mcp-adapter`
+
+Datu sets `theme = "datu"` by default without permanently mutating Pi settings. Datu settings are applied through a temporary Pi agent directory for the current run.
+
+Default packages are loaded with Pi's temporary `--extension npm:...` path, so they are available for the current run without permanently installing them into Pi settings. Default prompts are empty. The default Datu prompt is enabled and appended with Pi's `--append-system-prompt` flag.
+
+Disable default skills or themes when building a custom wrapper:
+
+```nix
+inputs.datu.lib.mkDatu { inherit pkgs; } {
+  enableDefaultExtensions = false;
+  enableDefaultSkills = false;
+  enableDefaultThemes = false;
+  enableDefaultPackages = false;
+  enableDefaultSettings = false;
+}
+```
 
 Datu does not override Pi's config, session, auth, or package-cache directories by default.
 
