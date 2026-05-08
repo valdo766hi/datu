@@ -6,6 +6,15 @@ export default function (pi: ExtensionAPI) {
 	let turns = 0;
 	let thinkingLevel = "off";
 
+	const headerLines = [
+		"██████╗  █████╗ ████████╗██╗   ██╗",
+		"██╔══██╗██╔══██╗╚══██╔══╝██║   ██║",
+		"██║  ██║███████║   ██║   ██║   ██║",
+		"██║  ██║██╔══██║   ██║   ██║   ██║",
+		"██████╔╝██║  ██║   ██║   ╚██████╔╝",
+		"╚═════╝ ╚═╝  ╚═╝   ╚═╝    ╚═════╝ ",
+	];
+
 	const thinkingColor = (level: string) => {
 		switch (level) {
 			case "minimal":
@@ -30,6 +39,23 @@ export default function (pi: ExtensionAPI) {
 		thinkingLevel = pi.getThinkingLevel();
 		const theme = ctx.ui.theme;
 		ctx.ui.setStatus("datu", `${theme.fg("accent", "datu")} ${theme.fg("success", "ready")}`);
+
+		ctx.ui.setHeader((_tui, theme) => ({
+			invalidate() {},
+			render(width: number): string[] {
+				const art = headerLines.map((line, index) => {
+					const color = index === 1 ? "accent" : "borderAccent";
+					return theme.fg(color, truncateToWidth(line, width));
+				});
+				const subtitle = [
+					theme.fg("muted", "determinate"),
+					theme.fg("dim", " ai "),
+					theme.fg("accent", "agent"),
+				].join("");
+
+				return ["", ...art, truncateToWidth(subtitle, width), ""];
+			},
+		}));
 
 		ctx.ui.setFooter((tui, theme, footerData) => {
 			const unsubscribe = footerData.onBranchChange(() => tui.requestRender());

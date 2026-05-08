@@ -128,7 +128,7 @@ Current defaults:
 - Package: `npm:pi-subagents`, from [pi-subagents](https://pi.dev/packages/pi-subagents) and [GitHub](https://github.com/nicobailon/pi-subagents).
 - Package: `npm:pi-mcp-adapter`, from [pi-mcp-adapter](https://pi.dev/packages/pi-mcp-adapter) and [GitHub](https://github.com/nicobailon/pi-mcp-adapter).
 
-The `datu` theme is active by default. Datu applies this through a temporary Pi agent directory for the current run, then symlinks existing Pi agent files into that directory. This avoids permanent writes to the user's Pi settings while allowing Datu defaults to be active immediately.
+The `datu` theme is loaded by default. To make it active, set `theme = "datu"` in your Pi settings or pass declarative `settings = { theme = "datu"; };` in a custom Datu package.
 
 Default packages are loaded with Pi's temporary `--extension npm:...` path. They are available for the current run without permanently adding package entries to Pi settings.
 
@@ -175,7 +175,7 @@ Option details:
 - `enableDefaultThemes`: load Datu default themes from `themes/`. Defaults to `true`.
 - `enableDefaultPrompts`: reserved for default prompt templates. Defaults to `true`; current default list is empty.
 - `enableDefaultPackages`: load package sources from `packages/default.nix`. Defaults to `true`.
-- `enableDefaultSettings`: apply Datu default settings, currently `theme = "datu"` and `editorPaddingX = 1`. Defaults to `true`.
+- `enableDefaultSettings`: apply Datu default settings. Phase 0 defaults are empty, so Datu does not override Pi settings by default.
 - `extensions`: additive extension files or package-like extension sources passed as `--extension`.
 - `skills`: additive skill files or directories passed as `--skill`.
 - `themes`: additive theme files or directories passed as `--theme`.

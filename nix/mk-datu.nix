@@ -69,10 +69,7 @@ let
   defaultThemes = [ ../themes ];
   defaultPrompts = [ ];
   defaultPackages = import ../packages;
-  defaultSettings = {
-    theme = "datu";
-    editorPaddingX = 1;
-  };
+  defaultSettings = { };
 
   finalExtensions = lib.optionals enableDefaultExtensions defaultExtensions ++ extensions;
   finalSkills = lib.optionals enableDefaultSkills defaultSkills ++ skills;
