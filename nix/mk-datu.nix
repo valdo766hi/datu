@@ -28,6 +28,8 @@
   extraRuntimeInputs ? [ ],
   extraEnv ? { },
   extraFlags ? [ ],
+  enableDefaultMcp ? true,
+  mcpServers ? { },
 }:
 
 let
@@ -79,6 +81,8 @@ let
   defaultPrompts = [ ];
   defaultPackages = import ../packages;
   defaultSettings = { };
+  defaultMcpServers = import ../nix/mcp.nix { inherit lib; };
+  finalMcpServers = lib.optionalAttrs enableDefaultMcp defaultMcpServers // mcpServers;
 
   finalExtensions = lib.optionals enableDefaultExtensions defaultExtensions ++ extensions;
   finalSkills = lib.optionals enableDefaultSkills defaultSkills ++ skills;
@@ -124,6 +128,20 @@ let
 
   settingsFile = writeText "datu-settings.json" (builtins.toJSON finalSettings);
 
+  mcpBase = lib.mapAttrs (name: cfg: lib.filterAttrs (n: v: n != "apiKeyHeader") cfg) finalMcpServers;
+  mcpBaseJson = writeText "datu-mcp-base.json" (builtins.toJSON { mcpServers = mcpBase; });
+
+  mcpHeaderPatches = lib.concatMapStringsSep "\n" (server:
+    let
+      bearerPrefix = lib.optionalString (server.value.apiKeyHeader ? bearer && server.value.apiKeyHeader.bearer) "Bearer ";
+    in
+    lib.optionalString (server.value ? apiKeyHeader) ''
+      if [ -n "''${${server.value.apiKeyHeader.env}:-}" ]; then
+        mcp_json=$(jq --arg name "${server.name}" --arg key "${server.value.apiKeyHeader.name}" --arg val "${bearerPrefix}''${${server.value.apiKeyHeader.env}}" '.mcpServers[$name].headers[$key] = $val' <<< "$mcp_json")
+      fi
+    ''
+  ) (lib.attrsToList finalMcpServers);
+
   agentDirLines = lib.optionalString (finalSettings != { } || models != null) ''
     datu_agent_dir="$(mktemp -d "''${TMPDIR:-/tmp}/datu-agent.XXXXXX")"
     datu_default_agent_dir="''${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
@@ -150,12 +168,20 @@ let
 
   wrapper = writeShellApplication {
     inherit name;
-    runtimeInputs = [ pi-bin ] ++ extraRuntimeInputs;
+    runtimeInputs = [ pi-bin ] ++ lib.optionals (finalMcpServers != { }) [ pkgs.jq ] ++ extraRuntimeInputs;
     text = ''
       ${lib.concatStringsSep "\n" envLines}
       ${agentDirLines}
+      ${lib.optionalString (finalMcpServers != { }) ''
+        mcp_json=$(cat ${mcpBaseJson})
+        ${mcpHeaderPatches}
+        mcp_config_path="$(mktemp "''${TMPDIR:-/tmp}/datu-mcp.XXXXXX.json")"
+        echo "$mcp_json" > "$mcp_config_path"
+      ''}
       export PI_SUBAGENTS_USER_DIR="''${PI_SUBAGENTS_USER_DIR:-$HOME/.pi/subagents}"
-      exec ${lib.getExe pi-bin} --append-system-prompt ${lib.escapeShellArg promptFile} ${resourceFlagsText} "$@"
+      exec ${lib.getExe pi-bin} --append-system-prompt ${lib.escapeShellArg promptFile} \
+        ${lib.optionalString (finalMcpServers != { }) "--mcp-config \"$mcp_config_path\""} \
+        ${resourceFlagsText} "$@"
     '';
   };
 in
@@ -168,6 +194,7 @@ wrapper.overrideAttrs (old: {
       finalPrompts
       finalPackages
       finalSettings
+      finalMcpServers
       promptFile
       pi-bin
       ;
