@@ -44,9 +44,17 @@ let
   '';
 
   extensionEntries = builtins.readDir ../extensions;
+  hasPackageExtension = name:
+    let
+      pkgPath = ../extensions/${name}/package.json;
+      pkg = if builtins.pathExists pkgPath then builtins.fromJSON (builtins.readFile pkgPath) else { };
+    in
+    pkg ? pi.extensions && builtins.isList pkg.pi.extensions && pkg.pi.extensions != [ ];
   extensionPath =
     name: type:
-    if type == "directory" && builtins.pathExists ../extensions/${name}/index.ts then
+    if type == "directory" && hasPackageExtension name then
+      ../extensions/${name}
+    else if type == "directory" && builtins.pathExists ../extensions/${name}/index.ts then
       ../extensions/${name}/index.ts
     else if type == "directory" && builtins.pathExists ../extensions/${name}/index.js then
       ../extensions/${name}/index.js
@@ -61,6 +69,7 @@ let
         && (
           builtins.pathExists ../extensions/${name}/index.ts
           || builtins.pathExists ../extensions/${name}/index.js
+          || hasPackageExtension name
         )
       )
     ) extensionEntries
