@@ -64,36 +64,43 @@ export default function (pi: ExtensionAPI) {
 				dispose: unsubscribe,
 				invalidate() {},
 				render(width: number): string[] {
-					let input = 0;
-					let output = 0;
-					let cost = 0;
+				let input = 0;
+				let output = 0;
+				let cost = 0;
 
-					for (const entry of ctx.sessionManager.getBranch()) {
-						if (entry.type === "message" && entry.message.role === "assistant") {
-							const message = entry.message as AssistantMessage;
-							input += message.usage.input;
-							output += message.usage.output;
-							cost += message.usage.cost.total;
-						}
+				for (const entry of ctx.sessionManager.getBranch()) {
+					if (entry.type === "message" && entry.message.role === "assistant") {
+						const message = entry.message as AssistantMessage;
+						input += message.usage.input;
+						output += message.usage.output;
+						cost += message.usage.cost.total;
 					}
+				}
 
-					const branch = footerData.getGitBranch();
-					const short = (value: number) => (value < 1000 ? `${value}` : `${(value / 1000).toFixed(1)}k`);
-					const model = ctx.model?.id ?? "no-model";
-					const cwd = process.cwd().replace(`${process.env.HOME}/`, "~/");
+				const totalTokens = input + output;
+				const contextWindow = (ctx.model as any)?.contextWindow ?? null;
+				const ctxPercent = contextWindow ? Math.round((totalTokens / contextWindow) * 100) : null;
 
-					const left = [
-						theme.fg("accent", "datu"),
-						theme.fg("dim", " | "),
-						theme.fg("muted", cwd),
-						branch ? theme.fg("dim", ` (${branch})`) : "",
-						theme.fg("dim", " | "),
-						theme.fg("success", `in ${short(input)}`),
-						theme.fg("dim", " / "),
-						theme.fg("warning", `out ${short(output)}`),
-						theme.fg("dim", " / "),
-						theme.fg("warning", `$${cost.toFixed(3)}`),
-					].join("");
+				const branch = footerData.getGitBranch();
+				const short = (value: number) => (value < 1000 ? `${value}` : `${(value / 1000).toFixed(1)}k`);
+				const model = ctx.model?.id ?? "no-model";
+				const cwd = process.cwd().replace(`${process.env.HOME}/`, "~/");
+
+				const left = [
+					theme.fg("accent", "datu"),
+					theme.fg("dim", " | "),
+					theme.fg("muted", cwd),
+					branch ? theme.fg("dim", ` (${branch})`) : "",
+					theme.fg("dim", " | "),
+					theme.fg("success", `in ${short(input)}`),
+					theme.fg("dim", " / "),
+					theme.fg("warning", `out ${short(output)}`),
+					theme.fg("dim", " / "),
+					theme.fg("accent", `ctx ${ctxPercent ?? "?"}`),
+					theme.fg("dim", "%"),
+					theme.fg("dim", " / "),
+					theme.fg("warning", `$${cost.toFixed(3)}`),
+				].join("");
 
 					const right = [
 						theme.fg("muted", model),
