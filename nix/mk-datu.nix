@@ -48,7 +48,8 @@ let
   '';
 
   extensionEntries = builtins.readDir ../extensions;
-  hasPackageExtension = name:
+  hasPackageExtension =
+    name:
     let
       pkgPath = ../extensions/${name}/package.json;
       pkg = if builtins.pathExists pkgPath then builtins.fromJSON (builtins.readFile pkgPath) else { };
@@ -82,7 +83,10 @@ let
   defaultThemes = [ ../themes ];
   defaultPrompts = [ ];
   defaultPackages = import ../packages;
-  defaultSettings = { };
+  defaultSettings = {
+    quietStartup = true;
+    theme = "datu";
+  };
   defaultMcpServers = import ../nix/mcp.nix { inherit lib; };
   finalMcpServers = lib.optionalAttrs enableDefaultMcp defaultMcpServers // mcpServers;
 
@@ -133,9 +137,12 @@ let
   mcpBase = lib.mapAttrs (name: cfg: lib.filterAttrs (n: v: n != "apiKeyHeader") cfg) finalMcpServers;
   mcpBaseJson = writeText "datu-mcp-base.json" (builtins.toJSON { mcpServers = mcpBase; });
 
-  mcpHeaderPatches = lib.concatMapStringsSep "\n" (server:
+  mcpHeaderPatches = lib.concatMapStringsSep "\n" (
+    server:
     let
-      bearerPrefix = lib.optionalString (server.value.apiKeyHeader ? bearer && server.value.apiKeyHeader.bearer) "Bearer ";
+      bearerPrefix = lib.optionalString (
+        server.value.apiKeyHeader ? bearer && server.value.apiKeyHeader.bearer
+      ) "Bearer ";
     in
     lib.optionalString (server.value ? apiKeyHeader) ''
       if [ -n "''${${server.value.apiKeyHeader.env}:-}" ]; then
@@ -170,7 +177,11 @@ let
 
   wrapper = writeShellApplication {
     inherit name;
-    runtimeInputs = [ pi-bin ] ++ lib.optionals (finalMcpServers != { }) [ pkgs.jq ] ++ extraRuntimeInputs;
+    runtimeInputs = [
+      pi-bin
+    ]
+    ++ lib.optionals (finalMcpServers != { }) [ pkgs.jq ]
+    ++ extraRuntimeInputs;
     text = ''
       ${lib.concatStringsSep "\n" envLines}
       ${agentDirLines}
