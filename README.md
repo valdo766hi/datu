@@ -122,13 +122,15 @@ Datu loads default resources from local repo folders so adding more defaults is 
 
 Current defaults:
 
-- Extension: `datu-ui`, local Datu UI polish extension in `extensions/datu-ui/index.ts`.
+- Extension: `datu-header`, local Datu banner and compact prompt/context/skills/tools table in `extensions/datu-header/index.ts`.
+- Extension: `datu-footer`, local Datu footer/status UI in `extensions/datu-footer/index.ts`.
+- Extension: `dekallm`, DekaLLM provider in `extensions/dekallm/index.ts`.
+- Extension: `pi-subagents`, vendored package-style extension in `extensions/pi-subagents/`.
 - Skill: `gh-cli`, copied from [github/awesome-copilot gh-cli skill](https://github.com/github/awesome-copilot/blob/main/skills/gh-cli/SKILL.md).
-- Theme: `datu`, local Catppuccin Mocha-inspired theme in `themes/datu.json`.
-- Package: `npm:pi-subagents`, from [pi-subagents](https://pi.dev/packages/pi-subagents) and [GitHub](https://github.com/nicobailon/pi-subagents).
+- Theme: `datu`, local Catppuccin Mocha-inspired color theme in `themes/datu.json`.
 - Package: `npm:pi-mcp-adapter`, from [pi-mcp-adapter](https://pi.dev/packages/pi-mcp-adapter) and [GitHub](https://github.com/nicobailon/pi-mcp-adapter).
 
-The `datu` theme is loaded by default. To make it active, set `theme = "datu"` in your Pi settings or pass declarative `settings = { theme = "datu"; };` in a custom Datu package.
+The `datu` theme is loaded by default as a Pi theme resource, not an extension. It only defines colors/style tokens. To make it active, set `theme = "datu"` in your Pi settings or pass declarative `settings = { theme = "datu"; };` in a custom Datu package.
 
 Default packages are loaded with Pi's temporary `--extension npm:...` path. They are available for the current run without permanently adding package entries to Pi settings.
 
@@ -226,7 +228,6 @@ Add a default package:
 ```nix
 # packages/default.nix
 [
-  "npm:pi-subagents"
   "npm:pi-mcp-adapter"
   "npm:another-pi-package"
 ]
