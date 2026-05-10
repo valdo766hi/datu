@@ -67,7 +67,8 @@ export default function (pi: ExtensionAPI) {
 
 					const branch = footerData.getGitBranch();
 					const short = (value: number) => (value < 1000 ? `${value}` : `${(value / 1000).toFixed(1)}k`);
-					const model = ctx.model?.id ?? "no-model";
+					const modelId = ctx.model?.id ?? "no-model";
+					const model = ctx.model?.id && ctx.model?.provider ? `${ctx.model.id}(${ctx.model.provider})` : modelId;
 					const cwd = process.cwd().replace(`${process.env.HOME}/`, "~/");
 
 					const left = [
