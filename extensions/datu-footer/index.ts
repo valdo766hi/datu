@@ -67,7 +67,11 @@ export default function (pi: ExtensionAPI) {
 
 					const branch = footerData.getGitBranch();
 					const short = (value: number) => (value < 1000 ? `${value}` : `${(value / 1000).toFixed(1)}k`);
-					const model = ctx.model?.id ?? "no-model";
+					const modelId = ctx.model?.id;
+					const modelSeparator = modelId?.indexOf("/") ?? -1;
+					const modelName = modelSeparator >= 0 ? modelId?.slice(modelSeparator + 1) : modelId;
+					const providerName = modelSeparator >= 0 ? modelId?.slice(0, modelSeparator) : ctx.model?.provider;
+					const model = modelName ? (providerName ? `${modelName}(${providerName})` : modelName) : "no-model";
 					const cwd = process.cwd().replace(`${process.env.HOME}/`, "~/");
 
 					const left = [
