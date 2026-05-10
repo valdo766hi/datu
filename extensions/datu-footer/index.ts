@@ -70,7 +70,7 @@ export default function (pi: ExtensionAPI) {
 					const modelId = ctx.model?.id;
 					const modelSeparator = modelId?.indexOf("/") ?? -1;
 					const modelName = modelSeparator >= 0 ? modelId?.slice(modelSeparator + 1) : modelId;
-					const providerName = modelSeparator >= 0 ? modelId?.slice(0, modelSeparator) : ctx.model?.provider;
+					const providerName = ctx.model?.provider ?? (modelSeparator >= 0 ? modelId?.slice(0, modelSeparator) : undefined);
 					const model = modelName ? (providerName ? `${modelName}(${providerName})` : modelName) : "no-model";
 					const cwd = process.cwd().replace(`${process.env.HOME}/`, "~/");
 
