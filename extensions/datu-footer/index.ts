@@ -20,6 +20,8 @@ const thinkingColor = (level: string) => {
 	}
 };
 
+
+
 export default function (pi: ExtensionAPI) {
 	let turns = 0;
 	let thinkingLevel = "off";
@@ -53,9 +55,15 @@ export default function (pi: ExtensionAPI) {
 						}
 					}
 
-					const totalTokens = input + output;
-					const contextWindow = (ctx.model as any)?.contextWindow ?? null;
-					const ctxPercent = contextWindow ? Math.round((totalTokens / contextWindow) * 100) : null;
+					const usage = ctx.getContextUsage();
+					const contextWindow = usage?.contextWindow ?? (ctx.model as any)?.contextWindow ?? null;
+					const ctxPercent = usage?.percent !== null && usage?.percent !== undefined
+						? Math.round(usage.percent)
+						: null;
+					const ctxText = ctxPercent !== null && contextWindow
+						? `ctx ${ctxPercent}%/${(contextWindow / 1000).toFixed(0)}k`
+						: "ctx ?";
+
 
 					const branch = footerData.getGitBranch();
 					const short = (value: number) => (value < 1000 ? `${value}` : `${(value / 1000).toFixed(1)}k`);
@@ -72,8 +80,7 @@ export default function (pi: ExtensionAPI) {
 						theme.fg("dim", " / "),
 						theme.fg("warning", `out ${short(output)}`),
 						theme.fg("dim", " / "),
-						theme.fg("accent", `ctx ${ctxPercent ?? "?"}`),
-						theme.fg("dim", "%"),
+						`\x1b[34m${ctxText}\x1b[39m`,
 						theme.fg("dim", " / "),
 						theme.fg("warning", `$${cost.toFixed(3)}`),
 					].join("");
