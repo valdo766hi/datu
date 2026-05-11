@@ -118,6 +118,7 @@ Datu loads default resources from local repo folders so adding more defaults is 
 - Extensions: `extensions/*/index.ts` or `extensions/*/index.js`
 - Skills: `skills/`
 - Themes: `themes/`
+- Prompts: `prompts/`
 - Packages: `packages/default.nix`
 
 Current defaults:
@@ -128,7 +129,9 @@ Current defaults:
 - Extension: `pi-subagents`, vendored package-style extension in `extensions/pi-subagents/`.
 - Skill: `gh-cli`, copied from [github/awesome-copilot gh-cli skill](https://github.com/github/awesome-copilot/blob/main/skills/gh-cli/SKILL.md).
 - Theme: `datu`, local Catppuccin Mocha-inspired color theme in `themes/datu.json`.
+- Prompt template: `/plan`, from `prompts/plan.md`, for investigation-only implementation planning with no repository mutation.
 - Package: `npm:pi-mcp-adapter`, from [pi-mcp-adapter](https://pi.dev/packages/pi-mcp-adapter) and [GitHub](https://github.com/nicobailon/pi-mcp-adapter).
+- Package: `npm:@plannotator/pi-extension`, from [Plannotator](https://github.com/backnotprop/plannotator), adding Pi plan review mode via `--plan` and `/plannotator`.
 
 The `datu` theme is loaded by default as a Pi theme resource, not an extension. It only defines colors/style tokens. To make it active, set `theme = "datu"` in your Pi settings or pass declarative `settings = { theme = "datu"; };` in a custom Datu package.
 
@@ -175,9 +178,9 @@ Option details:
 - `enableDefaultExtensions`: load Datu default extensions from `extensions/`. Defaults to `true`.
 - `enableDefaultSkills`: load Datu default skills from `skills/`. Defaults to `true`.
 - `enableDefaultThemes`: load Datu default themes from `themes/`. Defaults to `true`.
-- `enableDefaultPrompts`: reserved for default prompt templates. Defaults to `true`; current default list is empty.
+- `enableDefaultPrompts`: load Datu default prompt templates from `prompts/`. Defaults to `true`.
 - `enableDefaultPackages`: load package sources from `packages/default.nix`. Defaults to `true`.
-- `enableDefaultSettings`: apply Datu default settings. Phase 0 defaults are empty, so Datu does not override Pi settings by default.
+- `enableDefaultSettings`: apply Datu default settings. Current defaults set `quietStartup = true` and `theme = "datu"`.
 - `extensions`: additive extension files or package-like extension sources passed as `--extension`.
 - `skills`: additive skill files or directories passed as `--skill`.
 - `themes`: additive theme files or directories passed as `--theme`.
@@ -223,14 +226,46 @@ Add a default theme:
 themes/my-theme.json
 ```
 
+Add a default prompt template:
+
+```text
+prompts/my-template.md
+```
+
 Add a default package:
 
 ```nix
 # packages/default.nix
 [
   "npm:pi-mcp-adapter"
+  "npm:@plannotator/pi-extension"
   "npm:another-pi-package"
 ]
+```
+
+## `/plan` prompt template
+
+Use `/plan` in the editor to ask Datu/Pi to investigate and produce a read-only implementation plan.
+
+Examples:
+
+```text
+/plan
+/plan add OAuth device flow support
+```
+
+The built-in `/plan` template performs read-only investigation in the parent session, then prefers the existing `planner` subagent from `pi-subagents` to synthesize the implementation plan. It allows repository reading, search, git inspection, bounded validation commands, and web search/fetch when available. It forbids parent-session writes, edits, patches, dependency changes, git mutations, config mutation, and long-running processes.
+
+Output format:
+
+```text
+Summary:
+Findings:
+Plan:
+Files likely to change:
+Validation:
+Risks / Unknowns:
+Status: READY TO EXECUTE
 ```
 
 ## Runtime Behavior
