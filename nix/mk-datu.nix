@@ -81,7 +81,7 @@ let
   );
   defaultSkills = [ ../skills ];
   defaultThemes = [ ../themes ];
-  defaultPrompts = [ ];
+  defaultPrompts = [ ../prompts ];
   defaultPackages = import ../packages;
   defaultSettings = {
     quietStartup = true;
