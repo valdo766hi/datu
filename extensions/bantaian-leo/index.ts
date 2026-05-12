@@ -1,8 +1,9 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const IMAGE_DIR = "image";
+const IMAGE_DIR = join(dirname(fileURLToPath(import.meta.url)), "image");
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif"]);
 
 const pickRandom = <T>(items: T[]): T | undefined => {
@@ -54,8 +55,7 @@ export default function (pi: ExtensionAPI) {
     description: "Load random local image with consistent AI story output",
     handler: async (_args, ctx) => {
       try {
-        const dir = join(ctx.cwd ?? process.cwd(), IMAGE_DIR);
-        const entries = await readdir(dir, { withFileTypes: true });
+        const entries = await readdir(IMAGE_DIR, { withFileTypes: true });
         const files = entries
           .filter((e) => e.isFile())
           .map((e) => e.name)
@@ -71,9 +71,9 @@ export default function (pi: ExtensionAPI) {
           return;
         }
 
-        const relPath = `./${IMAGE_DIR}/${picked}`;
+        const imagePath = join(IMAGE_DIR, picked);
         injectStoryPromptForNextTurn = true;
-        pi.sendUserMessage(`read ${relPath}`);
+        pi.sendUserMessage(`read ${imagePath}`);
       } catch (error) {
         ctx.ui.notify(`bantaian-leo error: ${error instanceof Error ? error.message : String(error)}`, "error");
       }
