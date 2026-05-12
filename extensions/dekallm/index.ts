@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export default function (pi: ExtensionAPI) {
-	const apiKey = process.env.DEKA_API_KEY || process.env.DEKALLM_API_KEY || "";
+	const apiKey = process.env.DEKALLM_API_KEY ? "DEKALLM_API_KEY" : "DEKA_API_KEY";
 
 	pi.registerProvider("dekallm", {
 		name: "DekaLLM",
