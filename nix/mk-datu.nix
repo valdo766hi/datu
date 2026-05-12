@@ -83,9 +83,14 @@ let
   defaultThemes = [ ../themes ];
   defaultPrompts = [ ../prompts ];
   defaultPackages = import ../packages;
+  defaultSubagents = import ../subagents;
   defaultSettings = {
     quietStartup = true;
     theme = "datu";
+    # Keep legacy `subagents` key and also expose top-level `agentOverrides`
+    # so Pi picks per-agent model/thinking overrides reliably.
+    subagents = defaultSubagents;
+    agentOverrides = defaultSubagents.agentOverrides or { };
   };
   defaultMcpServers = import ../nix/mcp.nix { inherit lib; };
   finalMcpServers = lib.optionalAttrs enableDefaultMcp defaultMcpServers // mcpServers;

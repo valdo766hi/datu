@@ -46,14 +46,42 @@
 
       overlays.default = final: prev: {
         pi-bin = mkPiBin final;
-        datu = (mkDatuFor final final.pi-bin { pkgs = final; }) { };
+        datu = (mkDatuFor final final.pi-bin { pkgs = final; }) {
+          appendSystemPrompt = ''
+            Subagent-first policy:
+            - For nearly all non-trivial tasks, delegate first.
+            - Use planner for planning, scout for fast codebase recon, researcher for web/info gathering, worker for implementation, and reviewer for validation/review.
+            - Parent agent should focus on orchestration and final synthesis, not deep analysis.
+            - If requirements are unclear, call planner first.
+            - Prefer parallel subagents for independent workstreams.
+            - Avoid large parent-context analysis unless delegation is impossible.
+          '';
+          settings = {
+            defaultModel = "openai/gpt-5.3-codex";
+            defaultThinkingLevel = "minimal";
+          };
+        };
       };
 
       packages = forEachSupportedSystem (
         { pkgs, ... }:
         let
           pi-bin = mkPiBin pkgs;
-          datu = (mkDatuFor pkgs pi-bin { inherit pkgs; }) { };
+          datu = (mkDatuFor pkgs pi-bin { inherit pkgs; }) {
+            appendSystemPrompt = ''
+              Subagent-first policy:
+              - For nearly all non-trivial tasks, delegate first.
+              - Use planner for planning, scout for fast codebase recon, researcher for web/info gathering, worker for implementation, and reviewer for validation/review.
+              - Parent agent should focus on orchestration and final synthesis, not deep analysis.
+              - If requirements are unclear, call planner first.
+              - Prefer parallel subagents for independent workstreams.
+              - Avoid large parent-context analysis unless delegation is impossible.
+            '';
+            settings = {
+              defaultModel = "openai/gpt-5.3-codex";
+              defaultThinkingLevel = "minimal";
+            };
+          };
         in
         {
           inherit datu pi-bin;
