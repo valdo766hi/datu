@@ -193,7 +193,8 @@ let
       ${lib.optionalString (finalMcpServers != { }) ''
         mcp_json=$(cat ${mcpBaseJson})
         ${mcpHeaderPatches}
-        mcp_config_path="$(mktemp "''${TMPDIR:-/tmp}/datu-mcp.XXXXXX.json")"
+        mcp_config_dir="$(mktemp -d "''${TMPDIR:-/tmp}/datu-mcp.XXXXXX")"
+        mcp_config_path="$mcp_config_dir/mcp.json"
         echo "$mcp_json" > "$mcp_config_path"
       ''}
       export PI_SUBAGENTS_USER_DIR="''${PI_SUBAGENTS_USER_DIR:-$HOME/.pi/subagents}"
