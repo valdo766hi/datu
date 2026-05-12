@@ -126,6 +126,7 @@ Current defaults:
 - Extension: `datu-header`, local Datu banner and compact prompt/context/skills/tools table in `extensions/datu-header/index.ts`.
 - Extension: `datu-footer`, local Datu footer/status UI in `extensions/datu-footer/index.ts`.
 - Extension: `dekallm`, DekaLLM provider in `extensions/dekallm/index.ts`.
+- Extension: `bantaian-leo`, adds `/bantaian-leo` command that previews a random image from local `./image` without triggering an LLM turn.
 - Extension: `pi-subagents`, vendored package-style extension in `extensions/pi-subagents/`.
 - Skill: `gh-cli`, copied from [github/awesome-copilot gh-cli skill](https://github.com/github/awesome-copilot/blob/main/skills/gh-cli/SKILL.md).
 - Theme: `datu`, local Catppuccin Mocha-inspired color theme in `themes/datu.json`.
@@ -267,6 +268,10 @@ Validation:
 Risks / Unknowns:
 Status: READY TO EXECUTE
 ```
+
+## Extra Commands
+
+- `/bantaian-leo`: fetches one random image related to `https://unsplash.com/s/photos/beautiful-woman` and renders an inline preview in supported terminals. This is handled fully by extension code (no prompt-template expansion, no LLM turn).
 
 ## Runtime Behavior
 
