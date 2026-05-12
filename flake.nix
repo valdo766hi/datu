@@ -57,9 +57,14 @@
             - Avoid large parent-context analysis unless delegation is impossible.
           '';
           settings = {
-            defaultModel = "openai/gpt-5.3-codex";
+            defaultProvider = "openai-codex";
+            defaultModel = "openai-codex/gpt-5.4-mini";
             defaultThinkingLevel = "minimal";
           };
+          extraFlags = [
+            "--model"
+            "openai-codex/gpt-5.4-mini"
+          ];
         };
       };
 
@@ -78,9 +83,14 @@
               - Avoid large parent-context analysis unless delegation is impossible.
             '';
             settings = {
-              defaultModel = "openai/gpt-5.3-codex";
+              defaultProvider = "openai-codex";
+              defaultModel = "openai-codex/gpt-5.4-mini";
               defaultThinkingLevel = "minimal";
             };
+            extraFlags = [
+              "--model"
+              "openai-codex/gpt-5.4-mini"
+            ];
           };
         in
         {
