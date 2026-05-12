@@ -157,7 +157,7 @@ let
   ) (lib.attrsToList finalMcpServers);
 
   agentDirLines = lib.optionalString (finalSettings != { } || models != null) ''
-    datu_agent_dir="$(mktemp -d "''${TMPDIR:-/tmp}/datu-agent.XXXXXX")"
+    datu_agent_dir="$datu_runtime_dir/agent"
     datu_default_agent_dir="''${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
     mkdir -p "$datu_agent_dir"
     if [ -d "$datu_default_agent_dir" ]; then
@@ -189,12 +189,12 @@ let
     ++ extraRuntimeInputs;
     text = ''
       ${lib.concatStringsSep "\n" envLines}
+      datu_runtime_dir="$(mktemp -d "''${TMPDIR:-/tmp}/datu.XXXXXX")"
       ${agentDirLines}
       ${lib.optionalString (finalMcpServers != { }) ''
         mcp_json=$(cat ${mcpBaseJson})
         ${mcpHeaderPatches}
-        mcp_config_dir="$(mktemp -d "''${TMPDIR:-/tmp}/datu-mcp.XXXXXX")"
-        mcp_config_path="$mcp_config_dir/mcp.json"
+        mcp_config_path="$datu_runtime_dir/mcp.json"
         echo "$mcp_json" > "$mcp_config_path"
       ''}
       export PI_SUBAGENTS_USER_DIR="''${PI_SUBAGENTS_USER_DIR:-$HOME/.pi/subagents}"
