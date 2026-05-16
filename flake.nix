@@ -46,6 +46,7 @@
         let
           pi-bin = mkPiBin pkgs;
           resources = mkResources pkgs;
+          npmPkgs = mkNpmPackages pkgs;
         in
         mkDatuFor pkgs pi-bin {
           inherit pkgs;
