@@ -22,7 +22,7 @@
   skills ? [ ],
   themes ? [ ],
   prompts ? [ ],
-  packages ? [ ],
+  npmPackages ? [ ],
   settings ? { },
   models ? null,
   extraRuntimeInputs ? [ ],
@@ -64,7 +64,7 @@ let
   finalSkills = lib.optionals enableDefaultSkills skills;
   finalThemes = lib.optionals enableDefaultThemes themes;
   finalPrompts = lib.optionals enableDefaultPrompts prompts;
-  finalPackages = lib.optionals enableDefaultPackages packages;
+  finalNpmPackages = lib.optionals enableDefaultPackages npmPackages;
   finalSettings = lib.recursiveUpdate (lib.optionalAttrs enableDefaultSettings defaultSettings) settings;
 
   promptParts =
@@ -94,7 +94,7 @@ let
     ++ (lib.concatMap (path: [
       "--extension"
       (shellArg path)
-    ]) finalPackages)
+    ]) finalNpmPackages)
     ++ extraFlags;
 
   resourceFlagsText = lib.concatStringsSep " " resourceFlags;
@@ -193,7 +193,7 @@ wrapper.overrideAttrs (old: {
       finalSkills
       finalThemes
       finalPrompts
-      finalPackages
+      finalNpmPackages
       finalSettings
       finalMcpServers
       promptFile
