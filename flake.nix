@@ -37,7 +37,6 @@
         };
 
       mkResources = pkgs: import ./nix/resources.nix { inherit pkgs; };
-      mkNpmPackages = pkgs: import ./nix/npm-packages.nix { inherit pkgs; };
 
     in
     {
@@ -46,7 +45,6 @@
         let
           pi-bin = mkPiBin pkgs;
           resources = mkResources pkgs;
-          npmPkgs = mkNpmPackages pkgs;
         in
         mkDatuFor pkgs pi-bin {
           inherit pkgs;
@@ -59,10 +57,6 @@
           skills = [ resources.skills.gh-cli ];
           themes = [ resources.themes.datu ];
           prompts = [ resources.prompts.plan ];
-          npmPackages = [
-            npmPkgs.pi-mcp-adapter
-            npmPkgs.plannotator
-          ];
         };
 
       overlays.default = final: prev: {
@@ -70,7 +64,6 @@
         datu =
           let
             resources = mkResources final;
-            npmPkgs = mkNpmPackages final;
           in
           (mkDatuFor final final.pi-bin { pkgs = final; }) {
             appendSystemPrompt = ''
@@ -95,10 +88,6 @@
             skills = [ resources.skills.gh-cli ];
             themes = [ resources.themes.datu ];
             prompts = [ resources.prompts.plan ];
-            npmPackages = [
-              npmPkgs.pi-mcp-adapter
-              npmPkgs.plannotator
-            ];
           };
       };
 
@@ -107,7 +96,6 @@
         let
           pi-bin = mkPiBin pkgs;
           resources = mkResources pkgs;
-          npmPkgs = mkNpmPackages pkgs;
           datu = (mkDatuFor pkgs pi-bin { inherit pkgs; }) {
             appendSystemPrompt = ''
               Subagent-first policy:
@@ -131,10 +119,6 @@
             skills = [ resources.skills.gh-cli ];
             themes = [ resources.themes.datu ];
             prompts = [ resources.prompts.plan ];
-            npmPackages = [
-              npmPkgs.pi-mcp-adapter
-              npmPkgs.plannotator
-            ];
           };
         in
         {
