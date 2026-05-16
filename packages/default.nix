@@ -1,0 +1,4 @@
+[
+  "npm:pi-mcp-adapter"
+  "npm:@plannotator/pi-extension"
+]
