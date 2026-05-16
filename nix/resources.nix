@@ -5,14 +5,14 @@ let
 
   copyDir =
     name: src:
-    pkgs.runCommand "datu-${name}" { } ''
+    pkgs.runCommand name { } ''
       cp -r ${src} $out
       chmod -R u+w $out
     '';
 
   copyFile =
     name: src:
-    pkgs.runCommand "datu-${name}" { } ''
+    pkgs.runCommand name { } ''
       mkdir -p $out
       cp ${src} $out/${name}
     '';
