@@ -22,7 +22,7 @@
   skills ? [ ],
   themes ? [ ],
   prompts ? [ ],
-  packages ? [ ],
+  npmPackages ? [ ],
   settings ? { },
   models ? null,
   extraRuntimeInputs ? [ ],
@@ -47,59 +47,24 @@ let
     For all web search and web fetch operations, use the Exa MCP server (`exa_web_search_exa` and `exa_web_fetch_exa`) as the first and preferred option.
   '';
 
-  extensionEntries = builtins.readDir ../extensions;
-  hasPackageExtension =
-    name:
-    let
-      pkgPath = ../extensions/${name}/package.json;
-      pkg = if builtins.pathExists pkgPath then builtins.fromJSON (builtins.readFile pkgPath) else { };
-    in
-    pkg ? pi.extensions && builtins.isList pkg.pi.extensions && pkg.pi.extensions != [ ];
-  extensionPath =
-    name: type:
-    if type == "directory" && hasPackageExtension name then
-      ../extensions/${name}
-    else if type == "directory" && builtins.pathExists ../extensions/${name}/index.ts then
-      ../extensions/${name}/index.ts
-    else if type == "directory" && builtins.pathExists ../extensions/${name}/index.js then
-      ../extensions/${name}/index.js
-    else
-      ../extensions/${name};
-  defaultExtensions = lib.mapAttrsToList extensionPath (
-    lib.filterAttrs (
-      name: type:
-      (type == "regular" && (lib.hasSuffix ".ts" name || lib.hasSuffix ".js" name))
-      || (
-        type == "directory"
-        && (
-          builtins.pathExists ../extensions/${name}/index.ts
-          || builtins.pathExists ../extensions/${name}/index.js
-          || hasPackageExtension name
-        )
-      )
-    ) extensionEntries
-  );
-  defaultSkills = [ ../skills ];
-  defaultThemes = [ ../themes ];
-  defaultPrompts = [ ../prompts ];
-  defaultPackages = import ../packages;
+  defaultSkills = [ ];
+  defaultThemes = [ ];
+  defaultPrompts = [ ];
   defaultSubagents = import ../subagents;
   defaultSettings = {
     quietStartup = true;
     theme = "datu";
-    # Keep legacy `subagents` key and also expose top-level `agentOverrides`
-    # so Pi picks per-agent model/thinking overrides reliably.
     subagents = defaultSubagents;
     agentOverrides = defaultSubagents.agentOverrides or { };
   };
   defaultMcpServers = import ../nix/mcp.nix { inherit lib; };
   finalMcpServers = lib.optionalAttrs enableDefaultMcp defaultMcpServers // mcpServers;
 
-  finalExtensions = lib.optionals enableDefaultExtensions defaultExtensions ++ extensions;
-  finalSkills = lib.optionals enableDefaultSkills defaultSkills ++ skills;
-  finalThemes = lib.optionals enableDefaultThemes defaultThemes ++ themes;
-  finalPrompts = lib.optionals enableDefaultPrompts defaultPrompts ++ prompts;
-  finalPackages = lib.optionals enableDefaultPackages defaultPackages ++ packages;
+  finalExtensions = lib.optionals enableDefaultExtensions extensions;
+  finalSkills = lib.optionals enableDefaultSkills skills;
+  finalThemes = lib.optionals enableDefaultThemes themes;
+  finalPrompts = lib.optionals enableDefaultPrompts prompts;
+  finalNpmPackages = lib.optionals enableDefaultPackages npmPackages;
   finalSettings = lib.recursiveUpdate (lib.optionalAttrs enableDefaultSettings defaultSettings) settings;
 
   promptParts =
@@ -107,31 +72,32 @@ let
     ++ lib.optionals (appendSystemPrompt != null) [ appendSystemPrompt ];
   promptFile = writeText "datu-append-system-prompt.md" (lib.concatStringsSep "\n\n" promptParts);
 
+  shellArg = value: lib.escapeShellArg (toString value);
+
   resourceFlags =
     (lib.concatMap (path: [
       "--extension"
-      path
+      (shellArg path)
     ]) finalExtensions)
     ++ (lib.concatMap (path: [
       "--skill"
-      path
+      (shellArg path)
     ]) finalSkills)
     ++ (lib.concatMap (path: [
       "--theme"
-      path
+      (shellArg path)
     ]) finalThemes)
     ++ (lib.concatMap (path: [
       "--prompt-template"
-      path
+      (shellArg path)
     ]) finalPrompts)
-    ++ (lib.concatMap (package: [
+    ++ (lib.concatMap (path: [
       "--extension"
-      package
-    ]) finalPackages)
+      (shellArg path)
+    ]) finalNpmPackages)
     ++ extraFlags;
 
-  shellArg = value: if builtins.isPath value then "${value}" else lib.escapeShellArg (toString value);
-  resourceFlagsText = lib.concatStringsSep " " (map shellArg resourceFlags);
+  resourceFlagsText = lib.concatStringsSep " " resourceFlags;
 
   envLines = lib.mapAttrsToList (name: value: ''
     export ${name}=${lib.escapeShellArg (toString value)}
@@ -156,7 +122,10 @@ let
     ''
   ) (lib.attrsToList finalMcpServers);
 
-  agentDirLines = lib.optionalString (finalSettings != { } || models != null) ''
+  hasMcpServers = finalMcpServers != { };
+  hasSettingsOrModels = finalSettings != { } || models != null;
+
+  agentDirLines = lib.optionalString hasSettingsOrModels ''
     datu_agent_dir="$datu_runtime_dir/agent"
     datu_default_agent_dir="''${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
     mkdir -p "$datu_agent_dir"
@@ -180,27 +149,39 @@ let
     export PI_CODING_AGENT_DIR="$datu_agent_dir"
   '';
 
+  mcpConfigLines = lib.optionalString hasMcpServers ''
+    mcp_json=$(cat ${mcpBaseJson})
+    ${mcpHeaderPatches}
+    mcp_config_path="$datu_runtime_dir/mcp.json"
+    echo "$mcp_json" > "$mcp_config_path"
+  '';
+
   wrapper = writeShellApplication {
     inherit name;
     runtimeInputs = [
       pi-bin
     ]
-    ++ lib.optionals (finalMcpServers != { }) [ pkgs.jq ]
+    ++ lib.optionals hasMcpServers [ pkgs.jq ]
     ++ extraRuntimeInputs;
     text = ''
+      set -euo pipefail
+
       ${lib.concatStringsSep "\n" envLines}
+
       datu_runtime_dir="$(mktemp -d "''${TMPDIR:-/tmp}/datu.XXXXXX")"
+      trap 'rm -rf "$datu_runtime_dir"' EXIT
+
       ${agentDirLines}
-      ${lib.optionalString (finalMcpServers != { }) ''
-        mcp_json=$(cat ${mcpBaseJson})
-        ${mcpHeaderPatches}
-        mcp_config_path="$datu_runtime_dir/mcp.json"
-        echo "$mcp_json" > "$mcp_config_path"
-      ''}
+
+      ${mcpConfigLines}
+
       export PI_SUBAGENTS_USER_DIR="''${PI_SUBAGENTS_USER_DIR:-$HOME/.pi/subagents}"
-      exec ${lib.getExe pi-bin} --append-system-prompt ${lib.escapeShellArg promptFile} \
-        ${lib.optionalString (finalMcpServers != { }) "--mcp-config \"$mcp_config_path\""} \
-        ${resourceFlagsText} "$@"
+
+      ${lib.getExe pi-bin} \
+        --append-system-prompt ${shellArg promptFile} \
+        ${lib.optionalString hasMcpServers "--mcp-config \"$mcp_config_path\""} \
+        ${resourceFlagsText} \
+        "$@"
     '';
   };
 in
@@ -211,7 +192,7 @@ wrapper.overrideAttrs (old: {
       finalSkills
       finalThemes
       finalPrompts
-      finalPackages
+      finalNpmPackages
       finalSettings
       finalMcpServers
       promptFile

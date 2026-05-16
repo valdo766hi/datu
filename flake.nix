@@ -35,38 +35,79 @@
             ;
           inherit pi-bin;
         };
+
+      mkResources = pkgs: import ./nix/resources.nix { inherit pkgs; };
+      mkNpmPackages = pkgs: import ./nix/npm-packages.nix { inherit pkgs; };
+
     in
     {
       lib.mkDatu =
         { pkgs }:
         let
           pi-bin = mkPiBin pkgs;
+          resources = mkResources pkgs;
+          npmPkgs = mkNpmPackages pkgs;
         in
-        mkDatuFor pkgs pi-bin { inherit pkgs; };
+        mkDatuFor pkgs pi-bin {
+          inherit pkgs;
+          extensions = [
+            resources.extensions.datu-header
+            resources.extensions.datu-footer
+            resources.extensions.dekallm
+            resources.extensions.pi-subagents
+          ];
+          skills = [ resources.skills.gh-cli ];
+          themes = [ resources.themes.datu ];
+          prompts = [ resources.prompts.plan ];
+          npmPackages = [
+            npmPkgs.pi-mcp-adapter
+            npmPkgs.plannotator
+          ];
+        };
 
       overlays.default = final: prev: {
         pi-bin = mkPiBin final;
-        datu = (mkDatuFor final final.pi-bin { pkgs = final; }) {
-          appendSystemPrompt = ''
-            Subagent-first policy:
-            - For nearly all non-trivial tasks, delegate first.
-            - Use planner for planning, scout for fast codebase recon, researcher for web/info gathering, worker for implementation, and reviewer for validation/review.
-            - Parent agent should focus on orchestration and final synthesis, not deep analysis.
-            - If requirements are unclear, call planner first.
-            - Prefer parallel subagents for independent workstreams.
-            - Avoid large parent-context analysis unless delegation is impossible.
-          '';
-          settings = {
-            defaultModel = "openai/gpt-5.3-codex";
-            defaultThinkingLevel = "minimal";
+        datu =
+          let
+            resources = mkResources final;
+            npmPkgs = mkNpmPackages final;
+          in
+          (mkDatuFor final final.pi-bin { pkgs = final; }) {
+            appendSystemPrompt = ''
+              Subagent-first policy:
+              - For nearly all non-trivial tasks, delegate first.
+              - Use planner for planning, scout for fast codebase recon, researcher for web/info gathering, worker for implementation, and reviewer for validation/review.
+              - Parent agent should focus on orchestration and final synthesis, not deep analysis.
+              - If requirements are unclear, call planner first.
+              - Prefer parallel subagents for independent workstreams.
+              - Avoid large parent-context analysis unless delegation is impossible.
+            '';
+            settings = {
+              defaultModel = "openai/gpt-5.3-codex";
+              defaultThinkingLevel = "minimal";
+            };
+            extensions = [
+              resources.extensions.datu-header
+              resources.extensions.datu-footer
+              resources.extensions.dekallm
+              resources.extensions.pi-subagents
+            ];
+            skills = [ resources.skills.gh-cli ];
+            themes = [ resources.themes.datu ];
+            prompts = [ resources.prompts.plan ];
+            npmPackages = [
+              npmPkgs.pi-mcp-adapter
+              npmPkgs.plannotator
+            ];
           };
-        };
       };
 
       packages = forEachSupportedSystem (
         { pkgs, ... }:
         let
           pi-bin = mkPiBin pkgs;
+          resources = mkResources pkgs;
+          npmPkgs = mkNpmPackages pkgs;
           datu = (mkDatuFor pkgs pi-bin { inherit pkgs; }) {
             appendSystemPrompt = ''
               Subagent-first policy:
@@ -81,6 +122,19 @@
               defaultModel = "openai/gpt-5.3-codex";
               defaultThinkingLevel = "minimal";
             };
+            extensions = [
+              resources.extensions.datu-header
+              resources.extensions.datu-footer
+              resources.extensions.dekallm
+              resources.extensions.pi-subagents
+            ];
+            skills = [ resources.skills.gh-cli ];
+            themes = [ resources.themes.datu ];
+            prompts = [ resources.prompts.plan ];
+            npmPackages = [
+              npmPkgs.pi-mcp-adapter
+              npmPkgs.plannotator
+            ];
           };
         in
         {
