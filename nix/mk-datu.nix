@@ -124,8 +124,9 @@ let
 
   hasMcpServers = finalMcpServers != { };
   hasSettingsOrModels = finalSettings != { } || models != null;
+  needsAgentDir = hasSettingsOrModels || hasMcpServers;
 
-  agentDirLines = lib.optionalString hasSettingsOrModels ''
+  agentDirLines = lib.optionalString needsAgentDir ''
     datu_agent_dir="$datu_runtime_dir/agent"
     datu_default_agent_dir="''${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
     mkdir -p "$datu_agent_dir"
@@ -141,19 +142,20 @@ let
     ${lib.optionalString (
       models != null
     ) ''ln -s ${lib.escapeShellArg (toString models)} "$datu_agent_dir/models.json"''}
-    if [ -f "$datu_default_agent_dir/settings.json" ]; then
-      ${lib.getExe pkgs.jq} -s '.[1] * .[0]' ${settingsFile} "$datu_default_agent_dir/settings.json" > "$datu_agent_dir/settings.json"
-    else
-      cp ${settingsFile} "$datu_agent_dir/settings.json"
-    fi
+    ${lib.optionalString hasSettingsOrModels ''
+      if [ -f "$datu_default_agent_dir/settings.json" ]; then
+        ${lib.getExe pkgs.jq} -s '.[1] * .[0]' ${settingsFile} "$datu_default_agent_dir/settings.json" > "$datu_agent_dir/settings.json"
+      else
+        cp ${settingsFile} "$datu_agent_dir/settings.json"
+      fi
+    ''}
     export PI_CODING_AGENT_DIR="$datu_agent_dir"
   '';
 
   mcpConfigLines = lib.optionalString hasMcpServers ''
     mcp_json=$(cat ${mcpBaseJson})
     ${mcpHeaderPatches}
-    mcp_config_path="$datu_runtime_dir/mcp.json"
-    echo "$mcp_json" > "$mcp_config_path"
+    echo "$mcp_json" > "$datu_agent_dir/mcp.json"
   '';
 
   wrapper = writeShellApplication {
@@ -179,7 +181,6 @@ let
 
       ${lib.getExe pi-bin} \
         --append-system-prompt ${shellArg promptFile} \
-        ${lib.optionalString hasMcpServers "--mcp-config \"$mcp_config_path\""} \
         ${resourceFlagsText} \
         "$@"
     '';
